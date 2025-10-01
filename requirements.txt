@@ -1,0 +1,7 @@
+"numpy"
+"pydantic>=2"
+"rich"
+"torch"
+"transformers"
+"click>=8.0"
+"open-clip-torch"

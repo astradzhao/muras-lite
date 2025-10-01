@@ -1,0 +1,15 @@
+{
+    "samples": [
+        {
+            "query": "The horses are racing.",
+            "contexts_text": [
+                "The capital of France is Paris."
+            ],
+            "contexts_image_paths": [
+                "/workspace/muras/sample/horse_racing.jpg"
+            ],
+            "answer": "Brown",
+            "reference": "Brown"
+        }
+    ]
+}

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "muras"
+version = "0.0.1"
+description = "Muras: Multimodal RAG Assessment Suite"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [{name = "Daniel Zhao"}]
+keywords = ["RAG", "evaluation", "multimodal", "IR", "LLM"]
+dependencies = [
+  "numpy",
+  "pydantic>=2",
+  "rich",
+  "torch",
+  "transformers",
+  "click>=8.0",
+  "open-clip-torch",
+  "Pillow"
+]
+
+[project.urls]
+Homepage = "https://github.com/muras-eval/muras"
+Issues = "https://github.com/muras-eval/muras/issues"
+
+[project.scripts]
+muras = "muras.cli:main"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
