@@ -1,0 +1,181 @@
+"""
+SigLIP-based embedder for image-text understanding.
+
+SigLIP (Sigmoid Loss for Language-Image Pre-training) is an improved
+version of CLIP that uses sigmoid loss instead of softmax, providing
+better performance and more efficient training for multimodal RAG tasks.
+"""
+
+from typing import List
+import torch
+from .base import BaseEmbedder
+from transformers import AutoProcessor, AutoModel
+from transformers.image_utils import load_image
+
+from PIL import Image
+import torch.nn.functional as F
+
+
+class SigLIPEmbedder(BaseEmbedder):
+    """SigLIP-based embedder for multimodal retrieval."""
+    
+    def __init__(self, model_name: str = "google/siglip-base-patch16-224"):
+        """
+        Initialize SigLIP embedder.
+        
+        Args:
+            model_name: HuggingFace model identifier. Options include:
+                - "google/siglip-base-patch16-224" (default, good balance)
+                - "google/siglip-large-patch16-256" (better quality, slower)
+                - "google/siglip-so400m-patch14-384" (best quality, largest)
+        """
+        super().__init__()
+        self.model_name = model_name
+        self.model = None
+        self.processor = None
+        self.embedding_dim = None
+    
+    def _load_model(self):
+        """Lazy load the SigLIP model on first use."""
+        if self.model is None:
+            self.processor = AutoProcessor.from_pretrained(self.model_name)
+            self.model = AutoModel.from_pretrained(self.model_name).to(self.device)
+            self.model.eval()
+            self.embedding_dim = self.model.text_model.config.hidden_size
+    
+    def encode_text(self, texts: List[str], normalize: bool = True) -> torch.Tensor:
+        """
+        Encode text inputs into embeddings.
+        
+        Args:
+            texts: List of text strings to encode
+            
+        Returns:
+            Normalized embeddings tensor of shape (len(texts), embedding_dim)
+        """
+        if not texts:
+            return torch.empty(0, self.embedding_dim).to(self.device)
+        
+        self._load_model()
+        
+        with torch.no_grad():
+            inputs = self.processor(
+                text=texts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True
+            )
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            text_features = self.model.get_text_features(**inputs)
+        
+        return text_features if not normalize else F.normalize(text_features, p=2, dim=-1)
+    
+    def encode_images(self, image_paths: List[str], normalize: bool = True) -> torch.Tensor:
+        """
+        Encode images into embeddings.
+        
+        Args:
+            image_paths: List of paths to image files
+            
+        Returns:
+            Normalized embeddings tensor of shape (len(image_paths), embedding_dim)
+        """
+        if not image_paths:
+            return torch.empty(0, self.embedding_dim).to(self.device)
+        
+        self._load_model()
+        
+        images = []
+        for img_path in image_paths:
+            try:
+                img = load_image(img_path)
+                images.append(img)
+            except Exception as e:
+                print(f"Warning: Could not load image {img_path}: {e}")
+                continue
+        
+        if not images:
+            return torch.empty(0, 768).to(self.device)
+
+        inputs = self.processor(images=images,return_tensors="pt").to(self.device)
+        
+        with torch.no_grad():
+            image_features = self.model.get_image_features(**inputs)
+        
+        return image_features if not normalize else F.normalize(image_features, p=2, dim=-1)
+
+    
+class SigLIP2Embedder(BaseEmbedder):
+    """SigLIP 2-based embedder for multimodal retrieval."""
+
+    def __init__(self, model_name: str = "google/siglip2-base-patch16-224"):
+        """
+        Initialize SigLIP 2 embedder.
+        """
+        super().__init__()
+        self.model_name = model_name
+        self.model = None
+        self.processor = None
+        self.embedding_dim = None
+
+    def _load_model(self):
+        """Lazy load the SigLIP 2 model and processor."""
+        if self.model is None:
+            self.processor = AutoProcessor.from_pretrained(self.model_name)
+            self.model = AutoModel.from_pretrained(self.model_name).to(self.device).eval()
+            # Infer embedding dimension from the model
+            self.embedding_dim = self.model.text_model.config.hidden_size
+
+    def encode_text(self, texts: List[str], normalize: bool = True) -> torch.Tensor:
+        """
+        Encode text inputs into SigLIP 2 embeddings.
+
+        Args:
+            texts: List of text strings to encode
+
+        Returns:
+            Normalized embeddings tensor of shape (len(texts), embedding_dim)
+        """
+        self._load_model()
+        if not texts:
+            return torch.empty(0, self.embedding_dim).to(self.device)
+        
+        inputs = self.processor(text=texts,return_tensors="pt",padding=True,truncation=True).to(self.device)
+
+        with torch.no_grad():
+            text_features = self.model.get_text_features(**inputs)
+
+        return text_features if not normalize else F.normalize(text_features, p=2, dim=-1)
+
+    def encode_images(self, image_paths: List[str], normalize: bool = True) -> torch.Tensor:
+        """
+        Encode image paths into SigLIP 2 embeddings.
+
+        Args:
+            image_paths: List of strings for image paths
+
+        Returns:
+            Normalized embeddings tensor of shape (len(image_paths), embedding_dim)
+        """
+        self._load_model()
+        if not image_paths:
+            return torch.empty(0, self.embedding_dim).to(self.device)
+
+        images = []
+        for img_path in image_paths:
+            try:
+                img = load_image(img_path)
+                images.append(img)
+            except Exception as e:
+                print(f"Warning: Could not load image {img_path}: {e}")
+        if not images:
+            return torch.empty(0, self.embedding_dim).to(self.device)
+
+        inputs = self.processor(images=images,return_tensors="pt").to(self.device)
+
+        with torch.no_grad():
+            image_features = self.model.get_image_features(**inputs)
+
+        return image_features if not normalize else F.normalize(image_features, p=2, dim=-1)
+

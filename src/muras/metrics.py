@@ -1,8 +1,6 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-import open_clip
-from PIL import Image
-import torch
+from .embedders import BaseEmbedder
 import numpy as np
 
 class Sample(BaseModel):
@@ -14,82 +12,58 @@ class Sample(BaseModel):
 
 
 class QueryContextRelevance:
-    """CLIP-based metric for measuring query-context relevance."""
+    """Generic metric for measuring query-context relevance using any embedder."""
     
-    def __init__(self, model_name='ViT-B-32', pretrained='laion2b_s34b_b79k'):
-        self.model_name = model_name
-        self.pretrained = pretrained
-        self.model = None
-        self.preprocess = None
-        self.tokenizer = None
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-    
-    def _load_model(self):
-        """Lazy load the model on first use."""
-        if self.model is None:
-            self.model, _, self.preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained
-            )
-            self.model.eval()
-            self.model.to(self.device)
-            self.tokenizer = open_clip.get_tokenizer(self.model_name)
+    def __init__(self, embedder: BaseEmbedder = None):
+        """
+        Initialize the metric with a specific embedder.
+        
+        Args:
+            embedder: Any embedder inheriting from BaseEmbedder. 
+        """
+        if embedder is None:
+            from .embedders import CLIPEmbedder
+            embedder = CLIPEmbedder()
+        self.embedder = embedder
     
     def compute_text_similarities(self, query: str, texts: List[str]) -> List[float]:
-        """Compute CLIP similarity between query and each text context."""
+        """Compute similarity between query and each text context."""
         if not texts:
             return []
         
-        self._load_model()
+        query_embeddings = self.embedder.encode_text([query])
+        text_embeddings = self.embedder.encode_text(texts)
         
-        with torch.no_grad():
-            query_tokens = self.tokenizer([query]).to(self.device)
-            query_features = self.model.encode_text(query_tokens)
-            query_features = query_features / query_features.norm(dim=-1, keepdim=True)
-            
-            text_tokens = self.tokenizer(texts).to(self.device)
-            text_features = self.model.encode_text(text_tokens)
-            text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-            
-            similarities = (query_features @ text_features.T).squeeze(0)
-            
+        similarities = self.embedder.compute_similarity(query_embeddings, text_embeddings)
+        print(f"Similarities: {similarities}")
+        similarities = similarities.squeeze(0)  # Remove query dimension
+        
         return similarities.cpu().tolist() if len(texts) > 1 else [similarities.item()]
     
     def compute_image_similarities(self, query: str, image_paths: List[str]) -> List[float]:
-        """Compute CLIP similarity between query and each image context."""
+        """Compute similarity between query and each image context."""
         if not image_paths:
             return []
         
-        self._load_model()
+        query_embeddings = self.embedder.encode_text([query])
+        image_embeddings = self.embedder.encode_images(image_paths)
         
-        with torch.no_grad():
-            query_tokens = self.tokenizer([query]).to(self.device)
-            query_features = self.model.encode_text(query_tokens)
-            query_features = query_features / query_features.norm(dim=-1, keepdim=True)
-            
-            images = []
-            for img_path in image_paths:
-                try:
-                    img = Image.open(img_path).convert('RGB')
-                    images.append(self.preprocess(img))
-                except Exception as e:
-                    print(f"Warning: Could not load image {img_path}: {e}")
-                    continue
-            
-            if not images:
-                return []
-            
-            image_batch = torch.stack(images).to(self.device)
-            image_features = self.model.encode_image(image_batch)
-            image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-            
-            similarities = (query_features @ image_features.T).squeeze(0)
-            
-        return similarities.cpu().tolist() if len(images) > 1 else [similarities.item()]
+        if image_embeddings.shape[0] == 0:  # No valid images loaded
+            return []
+        
+        similarities = self.embedder.compute_similarity(query_embeddings, image_embeddings)
+        similarities = similarities.squeeze(0)  # Remove query dimension
+        
+        return similarities.cpu().tolist() if image_embeddings.shape[0] > 1 else [similarities.item()]
     
     def score(self, sample: Sample) -> Dict[str, Any]:
-        """Compute CLIP scores for both text and image contexts."""
+        """Compute similarity scores for both text and image contexts."""
         text_similarities = self.compute_text_similarities(sample.query, sample.contexts_text)
         image_similarities = self.compute_image_similarities(sample.query, sample.contexts_image_paths)
+
+        print(f"Text similarities: {text_similarities}")
+        print(f"Image similarities: {image_similarities}")
+        print("-" * 60)
         
         return {
             "text_similarities": text_similarities,
@@ -100,9 +74,20 @@ class QueryContextRelevance:
             "image_max": float(np.max(image_similarities)) if image_similarities else 0.0,
         }
 
-def evaluate(samples: List[Sample]) -> Dict[str, Any]:
-    """Evaluate samples using CLIP-based relevance metrics."""
-    metric = QueryContextRelevance()
+def evaluate(samples: List[Sample], embedder: BaseEmbedder = None) -> Dict[str, Any]:
+    """
+    Evaluate samples using query-context relevance metrics.
+    
+    Args:
+        samples: List of Sample objects to evaluate
+        embedder: Optional embedder to use. Defaults to CLIPEmbedder.
+        
+    Returns:
+        Dictionary with per-sample scores and aggregate metrics
+    """
+    import numpy as np
+    
+    metric = QueryContextRelevance(embedder=embedder)
     scores = [metric.score(s) for s in samples]
     
     all_text_avg = [s["text_avg"] for s in scores]

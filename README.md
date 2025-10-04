@@ -1,24 +1,110 @@
-# muras
-Base repo for muras eval multimodal-RAG suite
+# Muras: Multimodal RAG Assessment Suite
 
-cd into muras folder
-python -m build
+A pluggable evaluation framework for multimodal RAG systems.
 
-This creates a dist/ folder with:
-muras-0.0.1-py3-none-any.whl (wheel - installable binary)
-muras-0.0.1.tar.gz (source distribution)
+## 🚀 Quick Start
 
-pip install -e /workspace/muras
+### Installation
 
+```bash
+pip install -e .
+```
 
-# 1. Install in editable mode (do this once)
+### Basic Usage (Python)
+
+```python
+from muras import Sample, evaluate
+
+# Create evaluation samples
+samples = [
+    Sample(
+        query="What animals are racing?",
+        contexts_text=["Horse racing is a sport", "Dogs are pets"],
+        contexts_image_paths=["path/to/image.jpg"],
+        answer="Horses are racing"
+    )
+]
+
+# Evaluate with CLIP
+results = evaluate(samples)
+print(results['aggregate'])
+```
+```
+
+### Command Line (Optional)
+
+```bash
+# If you want CLI later, you can add it back
+# For now, focus on Python API and notebooks
+```
+
+## 📁 Repository Structure
+
+```
+muras/
+├── src/muras/              # Core package
+│   ├── embedders/          # Pluggable embedders (CLIP, custom)
+│   └── metrics.py          # Evaluation metrics
+├── examples/               # Python scripts
+│   ├── 01_quickstart.py
+│   └── 02_compare_embedders.py
+├── notebooks/              # Jupyter notebooks
+│   ├── quickstart.ipynb
+│   └── evaluate_your_rag.ipynb
+└── tests/                  # Tests
+```
+
+## 🔌 Pluggable Architecture
+
+Create custom embedders by inheriting from `BaseEmbedder`:
+
+```python
+from muras import BaseEmbedder, evaluate
+
+class MyEmbedder(BaseEmbedder):
+    def encode_text(self, texts):
+        # Your implementation
+        pass
+    
+    def encode_images(self, image_paths):
+        # Your implementation
+        pass
+
+# Use it
+results = evaluate(samples, embedder=MyEmbedder())
+```
+
+See `examples/custom_embedder_example.py` for details.
+
+For CLIP, you need to install `open-clip-torch`.
+For SigLIP, you need to install `protobuf`.
+For SentenceTransformer, you need to install `transformers`, `sentence-transformers` and `sentencepiece`.
+
+## 📊 Metrics
+
+- **QueryContextRelevance**: CLIP similarity between query and retrieved contexts
+  - Text context relevance
+  - Image context relevance
+  - Per-context scores + aggregates
+
+More metrics coming soon!
+
+## 🎯 Use Cases
+
+- Evaluate retrieval quality in multimodal RAG
+- Compare different embedders (CLIP, BLIP, SigLIP, etc.)
+- Analyze per-sample relevance scores
+- Debug low-quality retrievals
+
+## 📚 Documentation
+- [Examples](examples/README.md) - Code examples
+- [Notebooks](notebooks/) - Interactive tutorials
+
+## 🔨 Development
+
+```bash
 pip install -e .
 
-# 2. Make your code changes
-# (edit files in src/muras/)
-
-# 3. Test immediately (no reinstall needed!)
-pytest /workspace/muras/tests/
-
-# 4. When ready to publish, build it
+# build package
 python -m build
+```

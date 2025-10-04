@@ -14,10 +14,8 @@ keywords = ["RAG", "evaluation", "multimodal", "IR", "LLM"]
 dependencies = [
   "numpy",
   "pydantic>=2",
-  "rich",
   "torch",
   "transformers",
-  "click>=8.0",
   "open-clip-torch",
   "Pillow"
 ]
@@ -26,8 +24,6 @@ dependencies = [
 Homepage = "https://github.com/muras-eval/muras"
 Issues = "https://github.com/muras-eval/muras/issues"
 
-[project.scripts]
-muras = "muras.cli:main"
 
 [tool.pytest.ini_options]
 addopts = "-q"
