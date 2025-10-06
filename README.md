@@ -32,12 +32,6 @@ print(results['aggregate'])
 ```
 ```
 
-### Command Line (Optional)
-
-```bash
-# If you want CLI later, you can add it back
-# For now, focus on Python API and notebooks
-```
 
 ## 📁 Repository Structure
 
