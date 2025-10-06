@@ -43,14 +43,11 @@ print(results['aggregate'])
 ```
 muras/
 ├── src/muras/              # Core package
-│   ├── embedders/          # Pluggable embedders (CLIP, custom)
+│   ├── embedders/          # Pluggable embedders (CLIP, BLIP, SigLIP, ColPali, custom)
 │   └── metrics.py          # Evaluation metrics
 ├── examples/               # Python scripts
-│   ├── 01_quickstart.py
-│   └── 02_compare_embedders.py
+│   ├── 01_compare_embedders.py
 ├── notebooks/              # Jupyter notebooks
-│   ├── quickstart.ipynb
-│   └── evaluate_your_rag.ipynb
 └── tests/                  # Tests
 ```
 
