@@ -13,7 +13,7 @@ pip install -e .
 ### Basic Usage (Python)
 
 ```python
-from muras import Sample, evaluate
+from muras import Sample, evaluate, CLIPEmbedder
 
 # Create evaluation samples
 samples = [
@@ -25,8 +25,9 @@ samples = [
     )
 ]
 
-# Evaluate with CLIP
-results = evaluate(samples)
+# Evaluate similarities with CLIP embedder
+clip_embedder = CLIPEmbedder()
+results = evaluate(samples, embedder=clip_embedder)
 print(results['aggregate'])
 ```
 ```
@@ -76,11 +77,11 @@ See `examples/custom_embedder_example.py` for details.
 For CLIP, you need to install `open-clip-torch`.
 For SigLIP, you need to install `protobuf`.
 For SentenceTransformer, you need to install `transformers`, `sentence-transformers` and `sentencepiece`.
-For ColPali, need to install `colpali-engine>=0.3.0,<0.4.0`
+For ColPali, need to install `colpali-engine>=0.3.0`
 
 ## 📊 Metrics
 
-- **QueryContextRelevance**: CLIP similarity between query and retrieved contexts
+- **QueryContextRelevance**: Similarity between query and retrieved contexts
   - Text context relevance
   - Image context relevance
   - Per-context scores + aggregates
@@ -90,7 +91,7 @@ More metrics coming soon!
 ## 🎯 Use Cases
 
 - Evaluate retrieval quality in multimodal RAG
-- Compare different embedders (CLIP, BLIP, SigLIP, etc.)
+- Compare different embedders (CLIP, BLIP, SigLIP, ColPali, etc.)
 - Analyze per-sample relevance scores
 - Debug low-quality retrievals
 
