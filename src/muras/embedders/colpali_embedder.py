@@ -1,34 +1,33 @@
 """
-CLIP-based embedder for multimodal RAG tasks.
+ColPali-based embedder for multimodal RAG tasks.
 """
 from typing import List
 import torch
-import open_clip
-from PIL import Image
+from colpali_engine.models import ColPali, ColPaliProcessor
+from transformers.image_utils import load_image
 from .base import BaseEmbedder
 
 
-class CLIPEmbedder(BaseEmbedder):
-    """CLIP-based embedder using OpenCLIP."""
+class ColPaliEmbedder(BaseEmbedder):
+    """ColPali-based embedder using ColPali."""
     
-    def __init__(self, model_name='ViT-B-32', pretrained='laion2b_s34b_b79k'):
+    def __init__(self, model_name = "vidore/colpali-v1.3"):
         super().__init__()
         self.model_name = model_name
-        self.pretrained = pretrained
         self.model = None
-        self.preprocess = None
-        self.tokenizer = None
-        self.embedding_dim = None # typically 512, same for text and image
+        self.processor = None
+        self.embedding_dim = None # typically 128, same for text and image
     
     def _load_model(self):
         """Lazy load the model on first use."""
         if self.model is None:
-            self.model, _, self.preprocess = open_clip.create_model_and_transforms(
-                self.model_name, pretrained=self.pretrained
-            )
-            self.model.eval().to(self.device)
-            self.tokenizer = open_clip.get_tokenizer(self.model_name)
-            self.embedding_dim = 512 # hardcode for now
+            self.model = ColPali.from_pretrained(
+                self.model_name,
+                torch_dtype=torch.bfloat16,
+                device_map="cuda",
+            ).eval()
+            self.processor = ColPaliProcessor.from_pretrained(self.model_name)
+            self.embedding_dim = 128
     
     def encode_text(self, texts: List[str]) -> torch.Tensor:
         """Encode text using CLIP text encoder."""
@@ -36,12 +35,12 @@ class CLIPEmbedder(BaseEmbedder):
             return torch.empty(0, self.embedding_dim).to(self.device)
         
         self._load_model()
-        
+
         with torch.no_grad():
-            text_tokens = self.tokenizer(texts).to(self.device)
-            text_features = self.model.encode_text(text_tokens)
+            text_tokens = self.processor.process_queries(texts).to(self.device)
+            text_features = self.model(**text_tokens)
+            text_features = text_features.mean(dim=1)
         
-        #print("Text features shape:", text_features.shape)
         return text_features
     
     def encode_images(self, image_paths: List[str]) -> torch.Tensor:
@@ -54,18 +53,20 @@ class CLIPEmbedder(BaseEmbedder):
         images = []
         for img_path in image_paths:
             try:
-                img = Image.open(img_path).convert('RGB')
-                images.append(self.preprocess(img))
+                img = load_image(img_path)
+                images.append(img)
             except Exception as e:
                 print(f"Warning: Could not load image {img_path}: {e}")
                 continue
         
         if not images:
             return torch.empty(0, self.embedding_dim).to(self.device)
+
+        batch_images = self.processor.process_images(images).to(self.device)
         
         with torch.no_grad():
-            image_batch = torch.stack(images).to(self.device)
-            image_features = self.model.encode_image(image_batch)
+            image_features = self.model(**batch_images)
+            image_features = image_features.mean(dim=1)
         
         return image_features
 

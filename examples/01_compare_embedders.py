@@ -5,7 +5,7 @@ This shows how to use different embedders (CLIP, BLIP, Sentence-Transformers)
 to evaluate the same samples and compare their performance.
 """
 
-from muras import Sample, evaluate, CLIPEmbedder, SigLIPEmbedder, SentenceTransformerEmbedder, SigLIP2Embedder
+from muras import Sample, evaluate, CLIPEmbedder, SigLIPEmbedder, SentenceTransformerEmbedder, SigLIP2Embedder, BLIP2Embedder, ColPaliEmbedder
 
 samples = [
     Sample(
@@ -82,9 +82,12 @@ print("=" * 60)
 
 # Test different embedders
 embedders = {
-    #"CLIP": CLIPEmbedder(),
-    "SigLIP2": SigLIP2Embedder(),
-    #"Sentence-Transformers": SentenceTransformerEmbedder()
+    # "CLIP": CLIPEmbedder(),
+    # "BLIP2": BLIP2Embedder(),
+    # "SigLIP": SigLIPEmbedder(),
+    # "SigLIP2": SigLIP2Embedder(),
+    # "Sentence-Transformers": SentenceTransformerEmbedder(),
+    "ColPali": ColPaliEmbedder()
 }
 
 results = {}
@@ -103,9 +106,9 @@ for name, embedder in embedders.items():
         results[name] = None
 
 
-for sample in results["CLIP"]["samples"]:
-    print(sample)
-    print("-" * 60)
+# for sample in results["SigLIP2"]["samples"]:
+#     print(sample)
+#     print("-" * 60)
 
 #print(results["CLIP"]["samples"])
 

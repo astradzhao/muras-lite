@@ -34,7 +34,7 @@ class QueryContextRelevance:
         query_embeddings = self.embedder.encode_text([query])
         text_embeddings = self.embedder.encode_text(texts)
         
-        similarities = self.embedder.compute_similarity(query_embeddings, text_embeddings)
+        similarities = self.embedder.compute_cosine_similarity(query_embeddings, text_embeddings)
         print(f"Similarities: {similarities}")
         similarities = similarities.squeeze(0)  # Remove query dimension
         
@@ -48,11 +48,11 @@ class QueryContextRelevance:
         query_embeddings = self.embedder.encode_text([query])
         image_embeddings = self.embedder.encode_images(image_paths)
         
-        if image_embeddings.shape[0] == 0:  # No valid images loaded
+        if image_embeddings.shape[0] == 0:
             return []
         
-        similarities = self.embedder.compute_similarity(query_embeddings, image_embeddings)
-        similarities = similarities.squeeze(0)  # Remove query dimension
+        similarities = self.embedder.compute_cosine_similarity(query_embeddings, image_embeddings)
+        similarities = similarities.squeeze(0)
         
         return similarities.cpu().tolist() if image_embeddings.shape[0] > 1 else [similarities.item()]
     

@@ -79,6 +79,7 @@ See `examples/custom_embedder_example.py` for details.
 For CLIP, you need to install `open-clip-torch`.
 For SigLIP, you need to install `protobuf`.
 For SentenceTransformer, you need to install `transformers`, `sentence-transformers` and `sentencepiece`.
+For ColPali, need to install `colpali-engine>=0.3.0,<0.4.0`
 
 ## 📊 Metrics
 

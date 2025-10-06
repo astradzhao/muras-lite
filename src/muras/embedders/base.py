@@ -39,7 +39,7 @@ class BaseEmbedder(ABC):
         """
         pass
     
-    def compute_similarity(self, embeddings1: "torch.Tensor", embeddings2: "torch.Tensor") -> "torch.Tensor":
+    def compute_cosine_similarity(self, embeddings1: "torch.Tensor", embeddings2: "torch.Tensor") -> "torch.Tensor":
         """
         Compute cosine similarity between two sets of embeddings.
         
