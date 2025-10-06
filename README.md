@@ -1,6 +1,6 @@
 # Muras: Multimodal RAG Assessment Suite
 
-A pluggable evaluation framework for multimodal RAG systems.
+A pluggable evaluation framework for multimodal RAG systems. Inspired by https://github.com/explodinggradients/ragas. This is currently just a personal project.
 
 ## 🚀 Quick Start
 
