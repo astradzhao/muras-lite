@@ -48,6 +48,8 @@ muras/
 
 ## 🔌 Pluggable Architecture
 
+### Custom Embedders
+
 Create custom embedders by inheriting from `BaseEmbedder`:
 
 ```python
@@ -68,10 +70,61 @@ results = evaluate(samples, embedder=MyEmbedder())
 
 See `examples/custom_embedder_example.py` for details.
 
-For CLIP, you need to install `open-clip-torch`.
-For SigLIP, you need to install `protobuf`.
-For SentenceTransformer, you need to install `transformers`, `sentence-transformers` and `sentencepiece`.
-For ColPali, need to install `colpali-engine>=0.3.0`
+### Vector Stores
+
+Use vector stores for efficient multimodal retrieval:
+
+```python
+from muras import CLIPEmbedder, FAISSVectorStore, Document
+
+# Initialize
+embedder = CLIPEmbedder()
+vector_store = FAISSVectorStore(embedder=embedder)
+
+# Add documents
+documents = [
+    Document(id="1", text="Horse racing is a sport"),
+    Document(id="2", image_path="path/to/image.jpg"),
+]
+vector_store.add_documents(documents)
+
+# Search with text query
+results = vector_store.search_by_text("racing horses", top_k=5)
+
+# Search with image query
+results = vector_store.search_by_image("query.jpg", top_k=5)
+```
+
+**Use any LangChain vector store:**
+
+```python
+from muras import LangChainVectorStore, CLIPEmbedder
+
+# Works with FAISS, Chroma, Pinecone, Weaviate, Qdrant, and more!
+vector_store = LangChainVectorStore(
+    embedder=CLIPEmbedder(),
+    backend="chroma",  # or "faiss", "pinecone", etc.
+    backend_kwargs={"persist_directory": "./my_db"}
+)
+```
+
+See `examples/02_vector_store_usage.py` and `examples/03_langchain_vectorstores.py` for complete examples.
+
+## 📦 Optional Dependencies
+
+**Embedders:**
+- **CLIP**: `pip install open-clip-torch`
+- **SigLIP**: `pip install protobuf`
+- **SentenceTransformers**: `pip install transformers sentence-transformers sentencepiece`
+- **ColPali**: `pip install colpali-engine>=0.3.0`
+
+**Vector Stores:**
+- **FAISS**: `pip install faiss-cpu` (or `faiss-gpu`)
+- **LangChain Integration**: `pip install langchain langchain-community`
+- **Chroma**: `pip install chromadb`
+- **Pinecone**: `pip install pinecone-client`
+
+See `examples/04_end_to_end_rag.py` on how to run a full multimodal RAG solution on some data!
 
 ## 📊 Metrics
 
@@ -80,7 +133,7 @@ For ColPali, need to install `colpali-engine>=0.3.0`
   - Image context relevance
   - Per-context scores + aggregates
 
-More metrics coming soon!
+More metrics coming soon.
 
 ## 🎯 Use Cases
 
@@ -90,7 +143,7 @@ More metrics coming soon!
 - Debug low-quality retrievals
 
 ## 📚 Documentation
-- [Examples](examples/README.md) - Code examples
+- [Examples](examples/) - Code examples
 - [Notebooks](notebooks/) - Interactive tutorials
 
 ## 🔨 Development

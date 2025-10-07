@@ -5,3 +5,11 @@
 "transformers"
 "click>=8.0"
 "open-clip-torch"
+
+# Optional: Vector stores
+# faiss-cpu  # or faiss-gpu for GPU support
+# langchain  # For LangChain vector store adapter
+# langchain-community  # For LangChain vector store backends
+# chromadb  # For Chroma backend
+# pinecone-client  # For Pinecone backend
+# qdrant-client  # For Qdrant backend
